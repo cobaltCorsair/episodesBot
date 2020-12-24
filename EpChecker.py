@@ -4,7 +4,9 @@ from selenium import webdriver
 import time
 from datetime import datetime, timedelta
 import sqlite3
+import docx
 import os
+import re
 
 
 def create_bd_file():
@@ -578,45 +580,86 @@ class Base_checker(object):
         time_passed = str(self.time_duty).split('прошло: ')[1]
         print(f'Я должен уже {time_passed}')
 
+    def getPostsFromEp(self):
+        """Запрашиваем все посты в эпизоде из таблицы постов в БД"""
+        # запрос
+        sql_request = '''SELECT author_name, post_date, post_text FROM posts WHERE episode_name=? ORDER BY post_date'''
+        # аргумент запроса
+        sql_params = ([self.episode_name])
+        # передаем в бд
+        selected = update_bd(sql_request, sql_params)
+        # получаем выходные данные
+        rows = selected.fetchall()
+        # пишем вордовский файл
+        self.create_word_file(rows)
+
+    def create_word_file(self, rows):
+        # создаем вордовский файл
+        doc = docx.Document()
+        doc.add_heading(self.episode_name, 0)
+        # если список rows не пуст, то
+        if rows:
+            for row in rows:
+                doc.add_heading(f'{row[0]}, {datetime.fromtimestamp(row[1])}', 4)
+                # добавляем параграф
+                doc.add_paragraph(row[2])
+
+        else:
+            print('Нет результата. В базе данных пусто: проверьте введенные значения')
+
+        doc.save('post.docx')
+
+        # приводим в порядок форматирование в документе
+        doc_read = docx.Document('post.docx')
+        symbols = {"  ": "\n"}
+        for i in symbols:
+            for p in doc_read.paragraphs:
+                if p.text.find(i) >= 0:
+                    p.text = p.text.replace(i, symbols[i])
+
+        doc_read.save('post.docx')
+
+
+
 
 if __name__ == "__main__":
     """Массив методов класса, получающих данные по эпизоду с форума и пишущих в бд"""
-    start = EpChecker()
-    # создаем бд, если ее нет
-    create_bd_file()
-    # сохраняем дату последнего апдейта
-    updating_refresh_time()
-    # создаем вебдрайвер
-    start.create_driver()
-    # получаем параметры пользователя
-    start.get_user_data(login="Ларн Моро", password="l2xJXOhX")
-    # start.get_user_data(login='corsair', password='UJeKSu5C')
-    # получаем ссылку на эпизод
-    # start.get_episode_url('http://scrirtstest.rusff.ru/viewtopic.php?id=5')
-    start.get_episode_url('http://rains.rusff.ru/viewtopic.php?id=2676')
-    start.get_planned_gamers(["Ларн Моро", "Диан Монтанари"])
-    # переходим в эпизод
-    start.go_to_url()
-    # логинимся
-    start.login()
-    # получаем идентификатор профиля
-    start.get_my_profile_id()
-    # сохраняем данные юзера в бд
-    start.save_user_params()
-    # снова идем в эпизод
-    start.go_to_url()
-    # сохраняем дату последнего апдейта
+    # start = EpChecker()
+    # # создаем бд, если ее нет
+    # create_bd_file()
+    # # сохраняем дату последнего апдейта
     # updating_refresh_time()
-    # получаем имя эпизода
-    start.get_ep_name()
-    # получаем все посты из эпизода
-    start.get_all_posts_from_ep()
-
-    # получаем информацию об игроках и их id в эпизоде,
-    # а таже сравниваем число игроков с запланированным
-    start.get_information_ep()
-    # получаем кол-во постов и дату последнего поста
-    start.get_episode_params()
+    # # создаем вебдрайвер
+    # start.create_driver()
+    # # получаем параметры пользователя
+    # start.get_user_data(login="Ларн Моро", password="l2xJXOhX")
+    # # start.get_user_data(login='corsair', password='UJeKSu5C')
+    # # получаем ссылку на эпизод
+    # # start.get_episode_url('http://scrirtstest.rusff.ru/viewtopic.php?id=5')
+    # start.get_episode_url('http://rains.rusff.ru/viewtopic.php?id=2676')
+    # start.get_planned_gamers(["Ларн Моро", "Диан Монтанари"])
+    # # переходим в эпизод
+    # start.go_to_url()
+    # # логинимся
+    # start.login()
+    # # получаем идентификатор профиля
+    # start.get_my_profile_id()
+    # # сохраняем данные юзера в бд
+    # start.save_user_params()
+    # # снова идем в эпизод
+    # start.go_to_url()
+    # # сохраняем дату последнего апдейта
+    # # updating_refresh_time()
+    # # получаем имя эпизода
+    # start.get_ep_name()
+    # # получаем все посты из эпизода
+    # start.get_all_posts_from_ep()
+    #
+    # # получаем информацию об игроках и их id в эпизоде,
+    # # а таже сравниваем число игроков с запланированным
+    # start.get_information_ep()
+    # # получаем кол-во постов и дату последнего поста
+    # start.get_episode_params()
 
     """Массив методов проверки существующей бд"""
     check = Base_checker('Тропа лезвий', 'Ларн Моро', ["Ларн Моро", "Диан Монтанари"], True)
@@ -626,6 +669,7 @@ if __name__ == "__main__":
     check.check_strict_priority()
     check.get_priority()
     check.check_last_post()
+    check.getPostsFromEp()
 
     # start.driver.close()
     # start.open_episode('http://rains.rusff.ru/viewtopic.php?id=2673')
