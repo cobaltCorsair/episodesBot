@@ -580,7 +580,7 @@ class Base_checker(object):
         time_passed = str(self.time_duty).split('прошло: ')[1]
         print(f'Я должен уже {time_passed}')
 
-    def getPostsFromEp(self):
+    def get_posts_from_ep(self):
         """Запрашиваем все посты в эпизоде из таблицы постов в БД"""
         # запрос
         sql_request = '''SELECT author_name, post_date, post_text FROM posts WHERE episode_name=? ORDER BY post_date'''
@@ -607,17 +607,17 @@ class Base_checker(object):
         else:
             print('Нет результата. В базе данных пусто: проверьте введенные значения')
 
-        doc.save('post.docx')
+        doc.save(self.episode_name + '.docx')
 
         # приводим в порядок форматирование в документе
-        doc_read = docx.Document('post.docx')
+        doc_read = docx.Document(self.episode_name + '.docx')
         symbols = {"  ": "\n"}
         for i in symbols:
             for p in doc_read.paragraphs:
                 if p.text.find(i) >= 0:
                     p.text = p.text.replace(i, symbols[i])
 
-        doc_read.save('post.docx')
+        doc_read.save(self.episode_name + '.docx')
 
 
 
@@ -669,7 +669,7 @@ if __name__ == "__main__":
     check.check_strict_priority()
     check.get_priority()
     check.check_last_post()
-    check.getPostsFromEp()
+    check.get_posts_from_ep()
 
     # start.driver.close()
     # start.open_episode('http://rains.rusff.ru/viewtopic.php?id=2673')
