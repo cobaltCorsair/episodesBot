@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 import sqlite3
 import docx
 import os
-import re
 
 
 def create_bd_file():
@@ -472,7 +471,8 @@ class Base_checker(object):
         delta = this_date - datetime.fromtimestamp(last_post_date)
         mm, ss = divmod(delta.seconds, 60)
         hh, mm = divmod(mm, 60)
-        time_passed = 'С момента последнего поста в эпизод прошло: {} д. {} час. {} мин. {} сек.'.format(delta.days, hh, mm, ss)
+        time_passed = 'С момента последнего поста в эпизод прошло: {} д. {} час. {} мин. {} сек.'.format(delta.days, hh,
+                                                                                                         mm, ss)
 
         self.time_duty = time_passed
         print(time_passed)
@@ -594,7 +594,7 @@ class Base_checker(object):
         self.create_word_file(rows)
 
     def create_word_file(self, rows):
-        # создаем вордовский файл
+        """Создаем вордовский файл и чистим его"""
         doc = docx.Document()
         doc.add_heading(self.episode_name, 0)
         # если список rows не пуст, то
@@ -618,6 +618,58 @@ class Base_checker(object):
                     p.text = p.text.replace(i, symbols[i])
 
         doc_read.save(self.episode_name + '.docx')
+
+    def calculate_middle_time(self):
+        """Считаем среднее время моего ответа"""
+        # мое место в очереди (индекс)
+        my_pos_priority_index = self.episode_priority.index(self.my_name)
+        # индекс предыдущего отписавшего
+        prev_index = my_pos_priority_index - 1
+        # имя предыдущего отписавшего
+        prev_gamer = self.episode_priority[prev_index]
+
+        def get_prev_times(name):
+            """Кидаем запросы в бд, чтобы получить время"""
+            # запрос
+            sql_request = '''SELECT post_date FROM posts WHERE author_name=? AND episode_name=? ORDER BY post_date'''
+            # аргумент запроса
+            sql_params = ([name, self.episode_name])
+            # передаем в бд
+            selected = update_bd(sql_request, sql_params)
+            # получаем выходные данные
+            rows = selected.fetchall()
+
+            return rows
+
+        # время отписи предыдущего игрока
+        prev_times = get_prev_times(prev_gamer)
+        # мое время
+        my_times = get_prev_times(self.my_name)
+
+        # нормализуем размер двух списков со временем
+        if len(prev_times) > len(my_times):
+            prev_times[len(my_times):len(prev_times)] = []
+        elif len(prev_times) < len(my_times):
+            my_times = my_times[1:len(prev_times)+1]
+
+        # если они равны, то
+        if len(prev_times) == len(my_times):
+            times_prev_real = []
+            for i, k in zip(prev_times, my_times):
+                a = datetime.fromtimestamp(i[0])
+                b = datetime.fromtimestamp(k[0])
+                times_prev_real.append(b-a)
+            # считаем среднее время
+            middle_time = sum((c for c in times_prev_real), timedelta()) / len(times_prev_real)
+            mm, ss = divmod(middle_time.seconds, 60)
+            hh, mm = divmod(mm, 60)
+            middle_time = 'Мое среднее время написания поста: {} д. {} час. {} мин. {} сек.'.format(middle_time.days,
+                                                                                                    hh, mm, ss)
+            print(middle_time)
+        else:
+            return False
+
+
 
 
 
@@ -670,6 +722,7 @@ if __name__ == "__main__":
     check.get_priority()
     check.check_last_post()
     check.get_posts_from_ep()
+    check.calculate_middle_time()
 
     # start.driver.close()
     # start.open_episode('http://rains.rusff.ru/viewtopic.php?id=2673')
