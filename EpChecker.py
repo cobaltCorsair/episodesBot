@@ -674,39 +674,39 @@ class Base_checker(object):
 
 
 if __name__ == "__main__":
-    # """Массив методов класса, получающих данные по эпизоду с форума и пишущих в бд"""
-    # start = EpChecker()
-    # # создаем бд, если ее нет
-    # create_bd_file()
-    # # сохраняем дату последнего апдейта
-    # updating_refresh_time()
-    # # создаем вебдрайвер
-    # start.create_driver()
-    # # получаем параметры пользователя
-    # start.get_user_data(login="Oono Akira", password="xXkbX01B")
-    # # получаем ссылку на эпизод
-    # start.get_episode_url('http://freshair.rusff.ru/viewtopic.php?id=580')
-    # start.get_planned_gamers(["Aengus Gallagher", "Oono Akira"])
-    # # переходим в эпизод
-    # start.go_to_url()
-    # # логинимся
-    # start.login()
-    # # получаем идентификатор профиля
-    # start.get_my_profile_id()
-    # # сохраняем данные юзера в бд
-    # start.save_user_params()
-    # # снова идем в эпизод
-    # start.go_to_url()
-    # # получаем имя эпизода
-    # start.get_ep_name()
-    # # получаем все посты из эпизода
-    # start.get_all_posts_from_ep()
-    # # получаем информацию об игроках и их id в эпизоде,
-    # # а таже сравниваем число игроков с запланированным
-    # start.get_information_ep()
-    # # получаем кол-во постов и дату последнего поста
-    # start.get_episode_params()
-
+    """Массив методов класса, получающих данные по эпизоду с форума и пишущих в бд"""
+    start = EpChecker()
+    # создаем бд, если ее нет
+    create_bd_file()
+    # сохраняем дату последнего апдейта
+    updating_refresh_time()
+    # создаем вебдрайвер
+    start.create_driver()
+    # получаем параметры пользователя
+    start.get_user_data(login="Oono Akira", password="xXkbX01B")
+    # получаем ссылку на эпизод
+    start.get_episode_url('http://freshair.rusff.ru/viewtopic.php?id=580')
+    start.get_planned_gamers(["Aengus Gallagher", "Oono Akira"])
+    # переходим в эпизод
+    start.go_to_url()
+    # логинимся
+    start.login()
+    # получаем идентификатор профиля
+    start.get_my_profile_id()
+    # сохраняем данные юзера в бд
+    start.save_user_params()
+    # снова идем в эпизод
+    start.go_to_url()
+    # получаем имя эпизода
+    start.get_ep_name()
+    # получаем все посты из эпизода
+    start.get_all_posts_from_ep()
+    # получаем информацию об игроках и их id в эпизоде,
+    # а таже сравниваем число игроков с запланированным
+    start.get_information_ep()
+    # получаем кол-во постов и дату последнего поста
+    start.get_episode_params()
+    start.driver.close()
 
     """Массив методов проверки существующей бд"""
     check = Base_checker('Atrocity Exhibition', 'Oono Akira', ["Aengus Gallagher", "Oono Akira"], True)
@@ -719,5 +719,5 @@ if __name__ == "__main__":
     check.get_posts_from_ep()
     check.calculate_middle_time()
 
-    # start.driver.close()
+
 
