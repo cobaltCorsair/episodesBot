@@ -658,7 +658,10 @@ class Base_checker(object):
             for i, k in zip(prev_times, my_times):
                 a = datetime.fromtimestamp(i[0])
                 b = datetime.fromtimestamp(k[0])
-                times_prev_real.append(b-a)
+                if b > a:
+                    times_prev_real.append(b - a)
+                else:
+                    times_prev_real.append(a - b)
             # считаем среднее время
             middle_time = sum((c for c in times_prev_real), timedelta()) / len(times_prev_real)
             mm, ss = divmod(middle_time.seconds, 60)
@@ -670,12 +673,8 @@ class Base_checker(object):
             return False
 
 
-
-
-
-
 if __name__ == "__main__":
-    """Массив методов класса, получающих данные по эпизоду с форума и пишущих в бд"""
+    # """Массив методов класса, получающих данные по эпизоду с форума и пишущих в бд"""
     # start = EpChecker()
     # # создаем бд, если ее нет
     # create_bd_file()
@@ -684,12 +683,10 @@ if __name__ == "__main__":
     # # создаем вебдрайвер
     # start.create_driver()
     # # получаем параметры пользователя
-    # start.get_user_data(login="Ларн Моро", password="l2xJXOhX")
-    # # start.get_user_data(login='corsair', password='UJeKSu5C')
+    # start.get_user_data(login="Oono Akira", password="xXkbX01B")
     # # получаем ссылку на эпизод
-    # # start.get_episode_url('http://scrirtstest.rusff.ru/viewtopic.php?id=5')
-    # start.get_episode_url('http://rains.rusff.ru/viewtopic.php?id=2676')
-    # start.get_planned_gamers(["Ларн Моро", "Диан Монтанари"])
+    # start.get_episode_url('http://freshair.rusff.ru/viewtopic.php?id=580')
+    # start.get_planned_gamers(["Aengus Gallagher", "Oono Akira"])
     # # переходим в эпизод
     # start.go_to_url()
     # # логинимся
@@ -700,13 +697,10 @@ if __name__ == "__main__":
     # start.save_user_params()
     # # снова идем в эпизод
     # start.go_to_url()
-    # # сохраняем дату последнего апдейта
-    # # updating_refresh_time()
     # # получаем имя эпизода
     # start.get_ep_name()
     # # получаем все посты из эпизода
     # start.get_all_posts_from_ep()
-    #
     # # получаем информацию об игроках и их id в эпизоде,
     # # а таже сравниваем число игроков с запланированным
     # start.get_information_ep()
@@ -714,7 +708,7 @@ if __name__ == "__main__":
     # start.get_episode_params()
 
     """Массив методов проверки существующей бд"""
-    check = Base_checker('Тропа лезвий', 'Ларн Моро', ["Ларн Моро", "Диан Монтанари"], True)
+    check = Base_checker('Atrocity Exhibition', 'Oono Akira', ["Aengus Gallagher", "Oono Akira"], True)
     check.post_count_in_ep()
     check.last_post_date_in_ep()
     check.my_last_post_date_in_ep()
@@ -725,4 +719,4 @@ if __name__ == "__main__":
     check.calculate_middle_time()
 
     # start.driver.close()
-    # start.open_episode('http://rains.rusff.ru/viewtopic.php?id=2673')
+
