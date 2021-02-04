@@ -4,6 +4,7 @@ from selenium import webdriver
 import time
 from datetime import datetime, timedelta
 import sqlite3
+import docx
 import os
 
 
@@ -470,7 +471,8 @@ class Base_checker(object):
         delta = this_date - datetime.fromtimestamp(last_post_date)
         mm, ss = divmod(delta.seconds, 60)
         hh, mm = divmod(mm, 60)
-        time_passed = 'С момента последнего поста в эпизод прошло: {} д. {} час. {} мин. {} сек.'.format(delta.days, hh, mm, ss)
+        time_passed = 'С момента последнего поста в эпизод прошло: {} д. {} час. {} мин. {} сек.'.format(delta.days, hh,
+                                                                                                         mm, ss)
 
         self.time_duty = time_passed
         print(time_passed)
@@ -578,6 +580,98 @@ class Base_checker(object):
         time_passed = str(self.time_duty).split('прошло: ')[1]
         print(f'Я должен уже {time_passed}')
 
+    def get_posts_from_ep(self):
+        """Запрашиваем все посты в эпизоде из таблицы постов в БД"""
+        # запрос
+        sql_request = '''SELECT author_name, post_date, post_text FROM posts WHERE episode_name=? ORDER BY post_date'''
+        # аргумент запроса
+        sql_params = ([self.episode_name])
+        # передаем в бд
+        selected = update_bd(sql_request, sql_params)
+        # получаем выходные данные
+        rows = selected.fetchall()
+        # пишем вордовский файл
+        self.create_word_file(rows)
+
+    def create_word_file(self, rows):
+        """Создаем вордовский файл и чистим его"""
+        doc = docx.Document()
+        doc.add_heading(self.episode_name, 0)
+        # если список rows не пуст, то
+        if rows:
+            for row in rows:
+                doc.add_heading(f'{row[0]}, {datetime.fromtimestamp(row[1])}', 4)
+                # добавляем параграф
+                doc.add_paragraph(row[2])
+
+        else:
+            print('Нет результата. В базе данных пусто: проверьте введенные значения')
+
+        doc.save(self.episode_name + '.docx')
+
+        # приводим в порядок форматирование в документе
+        doc_read = docx.Document(self.episode_name + '.docx')
+        symbols = {"  ": "\n"}
+        for i in symbols:
+            for p in doc_read.paragraphs:
+                if p.text.find(i) >= 0:
+                    p.text = p.text.replace(i, symbols[i])
+
+        doc_read.save(self.episode_name + '.docx')
+
+    def calculate_middle_time(self):
+        """Считаем среднее время моего ответа"""
+        # мое место в очереди (индекс)
+        my_pos_priority_index = self.episode_priority.index(self.my_name)
+        # индекс предыдущего отписавшего
+        prev_index = my_pos_priority_index - 1
+        # имя предыдущего отписавшего
+        prev_gamer = self.episode_priority[prev_index]
+
+        def get_prev_times(name):
+            """Кидаем запросы в бд, чтобы получить время"""
+            # запрос
+            sql_request = '''SELECT post_date FROM posts WHERE author_name=? AND episode_name=? ORDER BY post_date'''
+            # аргумент запроса
+            sql_params = ([name, self.episode_name])
+            # передаем в бд
+            selected = update_bd(sql_request, sql_params)
+            # получаем выходные данные
+            rows = selected.fetchall()
+
+            return rows
+
+        # время отписи предыдущего игрока
+        prev_times = get_prev_times(prev_gamer)
+        # мое время
+        my_times = get_prev_times(self.my_name)
+
+        # нормализуем размер двух списков со временем
+        if len(prev_times) > len(my_times):
+            prev_times[len(my_times):len(prev_times)] = []
+        elif len(prev_times) < len(my_times):
+            my_times = my_times[1:len(prev_times)+1]
+
+        # если они равны, то
+        if len(prev_times) == len(my_times):
+            times_prev_real = []
+            for i, k in zip(prev_times, my_times):
+                a = datetime.fromtimestamp(i[0])
+                b = datetime.fromtimestamp(k[0])
+                if b > a:
+                    times_prev_real.append(b - a)
+                else:
+                    times_prev_real.append(a - b)
+            # считаем среднее время
+            middle_time = sum((c for c in times_prev_real), timedelta()) / len(times_prev_real)
+            mm, ss = divmod(middle_time.seconds, 60)
+            hh, mm = divmod(mm, 60)
+            middle_time = 'Мое среднее время написания поста: {} д. {} час. {} мин. {} сек.'.format(middle_time.days,
+                                                                                                    hh, mm, ss)
+            print(middle_time)
+        else:
+            return False
+
 
 if __name__ == "__main__":
     """Массив методов класса, получающих данные по эпизоду с форума и пишущих в бд"""
@@ -589,12 +683,10 @@ if __name__ == "__main__":
     # создаем вебдрайвер
     start.create_driver()
     # получаем параметры пользователя
-    start.get_user_data(login="Ларн Моро", password="l2xJXOhX")
-    # start.get_user_data(login='corsair', password='UJeKSu5C')
+    start.get_user_data(login="Oono Akira", password="xXkbX01B")
     # получаем ссылку на эпизод
-    # start.get_episode_url('http://scrirtstest.rusff.ru/viewtopic.php?id=5')
-    start.get_episode_url('http://rains.rusff.ru/viewtopic.php?id=2676')
-    start.get_planned_gamers(["Ларн Моро", "Диан Монтанари"])
+    start.get_episode_url('http://freshair.rusff.ru/viewtopic.php?id=580')
+    start.get_planned_gamers(["Aengus Gallagher", "Oono Akira"])
     # переходим в эпизод
     start.go_to_url()
     # логинимся
@@ -605,27 +697,27 @@ if __name__ == "__main__":
     start.save_user_params()
     # снова идем в эпизод
     start.go_to_url()
-    # сохраняем дату последнего апдейта
-    # updating_refresh_time()
     # получаем имя эпизода
     start.get_ep_name()
     # получаем все посты из эпизода
     start.get_all_posts_from_ep()
-
     # получаем информацию об игроках и их id в эпизоде,
     # а таже сравниваем число игроков с запланированным
     start.get_information_ep()
     # получаем кол-во постов и дату последнего поста
     start.get_episode_params()
+    start.driver.close()
 
     """Массив методов проверки существующей бд"""
-    check = Base_checker('Тропа лезвий', 'Ларн Моро', ["Ларн Моро", "Диан Монтанари"], True)
+    check = Base_checker('Atrocity Exhibition', 'Oono Akira', ["Aengus Gallagher", "Oono Akira"], True)
     check.post_count_in_ep()
     check.last_post_date_in_ep()
     check.my_last_post_date_in_ep()
     check.check_strict_priority()
     check.get_priority()
     check.check_last_post()
+    check.get_posts_from_ep()
+    check.calculate_middle_time()
 
-    # start.driver.close()
-    # start.open_episode('http://rains.rusff.ru/viewtopic.php?id=2673')
+
+
